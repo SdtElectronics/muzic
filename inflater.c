@@ -553,6 +553,7 @@ int inflate(z_stream* strm, int flush)
             st->outputBuffer = strm->next_out;
             st->bitstream.inputPtr = (const Byte*)inputBuffer;
             st->bitstream.inputEnd = st->bitstream.inputPtr + inputBufferSize;
+            
             #ifdef InfZlibStrm
             // strip zlib stream header
             if(*inputBuffer != 0x78){
@@ -791,7 +792,9 @@ int inflate(z_stream* strm, int flush)
     
     st->step        =  (unsigned)step;
     strm->next_in   =  (unsigned char *)(st->bitstream.inputPtr);
-    strm->total_in  += strm->next_in - inputBuffer;
+    unsigned int consumed = strm->next_in - inputBuffer;
+    strm->avail_in  -= consumed;
+    strm->total_in  += consumed;
     strm->total_out += (writePtr - prevWbeg);
     strm->next_out  =  writePtr;
     #ifdef MZ_DEBUG
