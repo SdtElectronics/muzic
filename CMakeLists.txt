@@ -1,7 +1,11 @@
-cmake_minimum_required(VERSION 3.19)
-project(sdefl VERSION 1.0.0)
+# Copyright 2022 SdtElectronics
+# SPDX-License-Identifier: Zlib
 
-option(BUILD_TESTS "Build test" ON)
+cmake_minimum_required(VERSION 3.19)
+project(muzic VERSION 1.0.0)
+
+option(BUILD_TESTS "Build test" OFF)
+option(BUILD_EXAMPLES "Build examples" ON)
 
 ### Require out-of-source builds
 file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" LOC_PATH)
@@ -11,14 +15,27 @@ if(EXISTS "${LOC_PATH}")
                         "remove CMakeCache.txt and CMakeFiles.")
 endif()
 
-add_library(sdefl
-    sdefl.c
-    sinfl.c)
+add_library(muzic
+    defl_static.c
+    genlz77.c
+    inflater.c
+    zlib_comp.c
+)
 
-target_include_directories(sdefl 
+if (DEBUG_MSG)
+    target_compile_definitions(muzic PRIVATE
+        MZ_DEBUG
+    )   
+endif() 
+
+target_include_directories(muzic 
   PUBLIC 
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>")
 
 if(BUILD_TESTS)
     add_subdirectory(tests)
+endif()
+
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
 endif()
