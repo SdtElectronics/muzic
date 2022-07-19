@@ -3,8 +3,8 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#include <stdio.h>
 
+#include <stdio.h>
 #include <string.h>
 
 #include "uzlib.h"
@@ -42,7 +42,6 @@ int deflate(z_streamp strm, int flush){
             strm->next_out  += strm->avail_out;
             strm->total_out += strm->avail_out;
             strm->avail_out = 0;
-            // printf("outlen: %d, total_out: %d\n", ustate->outlen, strm->total_out);
             return Z_BUF_ERROR;
         }
 

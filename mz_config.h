@@ -1,8 +1,13 @@
+/*
+ * Copyright 2022 SdtElectronics
+ *
+ * SPDX-License-Identifier: Zlib
+ */
 
 #ifndef MZ_CONF_INCLUDED
 #define MZ_CONF_INCLUDED
 
-#define MZ_DEBUG
+/* #define MZ_DEBUG */
 
 /* Zlib pads raw deflate stream with a 2-byte header by default */
 /* Enable this macro to emulate this behavior */

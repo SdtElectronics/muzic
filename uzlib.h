@@ -119,7 +119,6 @@ typedef struct uzlib_uncomp_s {
     TINF_TREE dtree; /* dynamic distance tree */
 } uzlib_uncomp;
 
-// #include "tinf_compat.h"
 
 #define TINF_PUT(d, c) \
     { \

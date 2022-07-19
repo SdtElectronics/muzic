@@ -1,12 +1,12 @@
+/*
+ * Copyright 2022 SdtElectronics
+ *
+ * SPDX-License-Identifier: Zlib
+ */
 
 #ifndef MZ_ZLIB_COMP_INCLUDED
 #define MZ_ZLIB_COMP_INCLUDED
 
-#ifndef MZ_ZLIB_API 
-// #error Must define macro MZ_ZLIB_API in mz_config.h to enable zlib-compatible API
-#endif
-
-// #include <zlib.h>
 #define Z_NO_FLUSH      0
 #define Z_PARTIAL_FLUSH 1
 #define Z_SYNC_FLUSH    2
@@ -14,7 +14,6 @@
 #define Z_FINISH        4
 #define Z_BLOCK         5
 #define Z_TREES         6
-/* Allowed flush values; see deflate() and inflate() below for details */
 
 #define Z_OK            0
 #define Z_STREAM_END    1

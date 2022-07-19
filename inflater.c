@@ -555,7 +555,7 @@ int inflate(z_stream* strm, int flush)
             st->bitstream.inputEnd = st->bitstream.inputPtr + inputBufferSize;
             
             #ifdef InfZlibStrm
-            // strip zlib stream header
+            /* strip zlib stream header */
             if(*inputBuffer != 0x78){
                 st->action=InfAction_Init;
                 return Z_DATA_ERROR;
