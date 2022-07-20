@@ -36,10 +36,9 @@ CMake is also supported. To use this library as a subproject, simply add `muzic`
 
 ## Notes
 ### Zlib stream header
-Zlib pads raw deflate stream with a 2-byte header conforming [RFC-1950](https://www.rfc-editor.org/rfc/rfc1950) by default. To emulate this behavior, the macro `InfZlibStrm` must be enabled in `mz_config.h` (it's enabled by default). Only when `inflateInit2()` and `deflateInit2()` are called with `windowBits` set to a negative values, Zlib will generate and accept raw deflate stream without the header, and `InfZlibStrm` can be disabled. Otherwise, Zlib will signal an error when decompressing the stream produced by muzic, and muzic won't be able to decompress stream produced by Zlib if `InfZlibStrm` is disabled.
+Zlib pads raw deflate stream with a 2-byte header conforming [RFC-1950](https://www.rfc-editor.org/rfc/rfc1950) by default. To emulate this behavior, the macro `InfZlibStrm` must be enabled in `mz_config.h` (it's enabled by default). Only when `inflateInit2()` and `deflateInit2()` are called with `windowBits` set to negative values, Zlib will generate and accept raw deflate stream without the header, and `InfZlibStrm` can be disabled. Otherwise, Zlib will signal an error when decompressing the stream produced by muzic, and muzic won't be able to decompress stream produced by Zlib if `InfZlibStrm` is disabled.
 
 ## TODO:
-* Add Zlib error messages
 * Support `Z_BLOCK` mode for `inflate()`
 * Benchmarks
 

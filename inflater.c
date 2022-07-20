@@ -558,6 +558,7 @@ int inflate(z_stream* strm, int flush)
             /* strip zlib stream header */
             if(*inputBuffer != 0x78){
                 st->action=InfAction_Init;
+                strm->msg = (char *)"incorrect header check";
                 return Z_DATA_ERROR;
             }
             if(inputBufferSize == 1){
@@ -642,8 +643,9 @@ int inflate(z_stream* strm, int flush)
                     case BlockType_FixedHuffman:   inf__goto(InfStep_LOAD_FIXED_HUFFMAN_DECODERS);
                     case BlockType_DynamicHuffman: inf__goto(InfStep_LOAD_DYNAMIC_HUFFMAN_DECODERS);
                     default: 
-                        step=InfStep_FATAL_ERROR;
-                        st->action=InfAction_Finish; 
+                        step = InfStep_FATAL_ERROR;
+                        st->action = InfAction_Finish; 
+                        strm->msg = (char *)"invalid block type";
                         res = Z_DATA_ERROR;
                         break;
                 }
@@ -656,8 +658,9 @@ int inflate(z_stream* strm, int flush)
                 if ( !Inf_BS_ReadDWord(bitstream,&temp) ) { inf__FILL_INPUT_BUFFER(); }
                 st->sequence_len = (temp & 0xFFFF);
                 if ( st->sequence_len != ((~temp)>>16) ) {
-                    step=InfStep_FATAL_ERROR;
+                    step = InfStep_FATAL_ERROR;
                     st->action=InfAction_Finish; 
+                    strm->msg = (char *)"invalid stored block lengths";
                     res = Z_DATA_ERROR;
                     break;
                 }
@@ -724,8 +727,9 @@ int inflate(z_stream* strm, int flush)
                     inf__goto(InfStep_PROCESS_NEXT_BLOCK);
                 }
                 else if (st->literal>Inf_MaxValidLengthCode) {
-                    step=InfStep_FATAL_ERROR;
-                    st->action=InfAction_Finish; 
+                    step = InfStep_FATAL_ERROR;
+                    st->action = InfAction_Finish; 
+                    strm->msg = (char *)"too many length or distance symbols";
                     res = Z_DATA_ERROR;
                     break; 
                 }
@@ -741,8 +745,9 @@ int inflate(z_stream* strm, int flush)
             case InfStep_Read_Distance:
                 if ( !Inf_BS_ReadEncodedBits(bitstream,&st->literal, st->distanceDecoder) ) { inf__FILL_INPUT_BUFFER(); }
                 if (st->literal>Inf_MaxValidDistanceCode) {
-                    step=InfStep_FATAL_ERROR;
-                    st->action=InfAction_Finish; 
+                    step = InfStep_FATAL_ERROR;
+                    st->action = InfAction_Finish; 
+                    strm->msg = (char *)"too many length or distance symbols";
                     res = Z_DATA_ERROR;
                     break; 
                 }
