@@ -12,7 +12,7 @@
 
 void outbits(struct uzlib_comp *out, unsigned long bits, int nbits);
 
-int deflateInit(z_streamp strm, int level){
+int deflateInit(z_stream* strm, int level){
     if (strm == Z_NULL) return Z_STREAM_ERROR;
     strm->msg = Z_NULL;
     struct uzlib_comp* ustate = (struct uzlib_comp*)malloc(sizeof(struct uzlib_comp));
@@ -30,7 +30,7 @@ int deflateInit(z_streamp strm, int level){
     return Z_OK;
 }
 
-int deflate(z_streamp strm, int flush){
+int deflate(z_stream* strm, int flush){
     struct uzlib_comp* ustate = strm->state.defl_state;
 
     /* We still have some pending data in the output buffer */
@@ -102,7 +102,7 @@ int deflate(z_streamp strm, int flush){
     return Z_STREAM_END;
 }
 
-int deflateEnd(z_streamp strm){
+int deflateEnd(z_stream* strm){
     free(strm->state.defl_state);
     return Z_OK;
 }

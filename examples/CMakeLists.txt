@@ -4,8 +4,8 @@
 set(DEFL_INPUT_BUFFER_SIZE "256" CACHE STRING "input buffer size for defl2stdout" FORCE)
 set(DEFL_OUTPUT_BUFFER_SIZE "1024" CACHE STRING "output buffer size for defl2stdout" FORCE)
 
-set(INFL_INPUT_BUFFER_SIZE "256" CACHE STRING "input buffer size for infl4stdin" FORCE)
-set(INFL_OUTPUT_BUFFER_SIZE "1024" CACHE STRING "output buffer size for infl4stdin" FORCE)
+set(INFL_INPUT_BUFFER_SIZE "192" CACHE STRING "input buffer size for infl4stdin" FORCE)
+set(INFL_OUTPUT_BUFFER_SIZE "768" CACHE STRING "output buffer size for infl4stdin" FORCE)
 
 
 add_executable(defl2stdout defl2stdout.c)

@@ -5,13 +5,13 @@ This library encapsulates a DEFLATE and INFLATE engine to provide a set of compr
 Please also refer to the [Zlib Manual](https://www.zlib.net/manual.html) for the complete description of APIs. Note that behaviors of functions in this library are not strictly identical to their Zlib counterparts, and differences are stated below.
 
 ### DEFLATE
-* `int deflateInit(z_streamp strm, int level)`
+* `int deflateInit(z_stream* strm, int level)`
 Initializes the internal stream state for compression. Currently, parameter `level` is not used, but preserved for compatibility with Zlib.
 
-* `int deflate(z_streamp strm, int flush)`
+* `int deflate(z_stream* strm, int flush)`
 `deflate` compresses as much data as possible, and stops when the input buffer becomes empty or the output buffer becomes full. Currently, parameter `flush` is not used, but preserved for compatibility with Zlib. The behavior of this function is always similar to the Zlib counterpart being fed with the option `Z_SYNC_FLUSH`.
 
-* `int deflateEnd(z_streamp strm)`
+* `int deflateEnd(z_stream* strm)`
 All dynamically allocated data structures for this stream are freed. This function discards any unprocessed input and does not flush any pending output.
 
 ### INFLATE
@@ -21,11 +21,11 @@ Initializes the internal stream state for decompression.
 * `int inflate(z_stream* strm, int flush)`
 `inflate` decompresses as much data as possible, and stops when the input buffer becomes empty or the output buffer becomes full. Currently, parameter `flush` is not used, but preserved for compatibility with Zlib. The behavior of this function is always similar to the Zlib counterpart being fed with the option `Z_SYNC_FLUSH`.
 
-* `int inflateEnd(z_streamp strm)`
+* `int inflateEnd(z_stream* strm)`
 All dynamically allocated data structures for this stream are freed. This function discards any unprocessed input and does not flush any pending output.
 
 ### Structures and macros
-`z_stream` is the only structure that Zlib exposed to users to interact with DEFLATE and INFLATE APIs. All fields are replicated with their original names, while only the first 6 fields are used, and the rest are dumb variables reserved for compatibility.
+`z_stream` is the only structure that Zlib exposed to users to interact with DEFLATE and INFLATE APIs. All fields are replicated with their original names, while only the first 7 fields are used, and the rest are dumb variables reserved for compatibility.
 
 Macros representing states and flush modes are preserved. They can be found in `zlib_comp.h`.
 

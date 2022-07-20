@@ -57,10 +57,10 @@ typedef z_stream * z_streamp;
 
 int inflateInit(z_stream* strm);
 int inflate(z_stream* strm, int flush);
-int inflateEnd(z_streamp strm);
+int inflateEnd(z_stream* strm);
 
-int deflateInit(z_streamp strm, int level);
-int deflate(z_streamp strm, int flush);
-int deflateEnd(z_streamp strm);
+int deflateInit(z_stream* strm, int level);
+int deflate(z_stream* strm, int flush);
+int deflateEnd(z_stream* strm);
 
 #endif // MZ_ZLIB_COMP_INCLUDED
