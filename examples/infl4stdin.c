@@ -10,7 +10,11 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef MZ_EG_USE_ZLIB
+#include <zlib.h>
+#else
 #include "zlib_comp.h"
+#endif
 
 /* only integer multiples of 3 are valid values     
    otherwise hexadecimal representation of bytes grouped in 3 characters 
@@ -65,6 +69,17 @@ int main(int argc, char** argv){
     unsigned char in_buf[MZ_EG_INPUT_BUFFER_SIZE];
     unsigned char out_buf[MZ_EG_OUTPUT_BUFFER_SIZE];
     z_stream strm;
+
+    /* ======= This initialization is not necessary for muzic ====== */
+    /* === It's preserved merely for the compatibility with zlib === */
+    {    
+        strm.next_in  = Z_NULL;
+        strm.avail_in = 0;
+
+        strm.zalloc = Z_NULL;
+        strm.zfree  = Z_NULL;
+        strm.opaque = Z_NULL;
+    }
 
     int prev_state = inflateInit(&strm);
 

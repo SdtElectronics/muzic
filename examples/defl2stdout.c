@@ -7,7 +7,11 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#ifdef MZ_EG_USE_ZLIB
+#include <zlib.h>
+#else
 #include "zlib_comp.h"
+#endif
 
 #ifndef MZ_EG_INPUT_BUFFER_SIZE
 #define MZ_EG_INPUT_BUFFER_SIZE 256
@@ -23,7 +27,15 @@ int main(int argc, char** argv){
     unsigned char out_buf[MZ_EG_OUTPUT_BUFFER_SIZE];
     z_stream strm;
 
-    int prev_state = deflateInit(&strm, 1);
+    /* ======= This initialization is not necessary for muzic ====== */
+    /* === It's preserved merely for the compatibility with zlib === */
+    {
+        strm.zalloc = Z_NULL;
+        strm.zfree  = Z_NULL;
+        strm.opaque = Z_NULL;
+    }
+
+    int prev_state = deflateInit(&strm, Z_DEFAULT_COMPRESSION);
 
     if(prev_state != Z_OK) {
         return prev_state;
@@ -44,7 +56,7 @@ int main(int argc, char** argv){
         strm.next_out  = out_buf;
         strm.avail_out = sizeof(out_buf);
 
-        prev_state = deflate(&strm, Z_SYNC_FLUSH);
+        prev_state = deflate(&strm, Z_FINISH);
         /* printf("total_out: %d\n ", strm.total_out); */
         unsigned char* idx;
         for(idx = out_buf; idx != strm.next_out; ++idx){

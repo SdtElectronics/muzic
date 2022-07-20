@@ -24,6 +24,11 @@
 #define Z_MEM_ERROR    (-4)
 #define Z_BUF_ERROR    (-5)
 
+#define Z_NO_COMPRESSION         0
+#define Z_BEST_SPEED             1
+#define Z_BEST_COMPRESSION       9
+#define Z_DEFAULT_COMPRESSION  (-1)
+
 #define Z_NULL  0
 
 struct Inf_State;

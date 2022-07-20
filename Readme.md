@@ -6,22 +6,28 @@ Please also refer to the [Zlib Manual](https://www.zlib.net/manual.html) for the
 
 ### DEFLATE
 * `int deflateInit(z_stream* strm, int level)`
+
 Initializes the internal stream state for compression. Currently, parameter `level` is not used, but preserved for compatibility with Zlib.
 
 * `int deflate(z_stream* strm, int flush)`
-`deflate` compresses as much data as possible, and stops when the input buffer becomes empty or the output buffer becomes full. Currently, parameter `flush` is not used, but preserved for compatibility with Zlib. The behavior of this function is always similar to the Zlib counterpart being fed with the option `Z_SYNC_FLUSH`.
+
+`deflate` compresses as much data as possible, and stops when the input buffer becomes empty or the output buffer becomes full. Currently, parameter `flush` is not used, but preserved for compatibility with Zlib. The behavior of this function is always similar to the Zlib counterpart being fed with the option `Z_FINISH`.
 
 * `int deflateEnd(z_stream* strm)`
+
 All dynamically allocated data structures for this stream are freed. This function discards any unprocessed input and does not flush any pending output.
 
 ### INFLATE
 * `int inflateInit(z_stream* strm)`
+
 Initializes the internal stream state for decompression.
 
 * `int inflate(z_stream* strm, int flush)`
+
 `inflate` decompresses as much data as possible, and stops when the input buffer becomes empty or the output buffer becomes full. Currently, parameter `flush` is not used, but preserved for compatibility with Zlib. The behavior of this function is always similar to the Zlib counterpart being fed with the option `Z_SYNC_FLUSH`.
 
 * `int inflateEnd(z_stream* strm)`
+
 All dynamically allocated data structures for this stream are freed. This function discards any unprocessed input and does not flush any pending output.
 
 ### Structures and macros
@@ -37,6 +43,26 @@ CMake is also supported. To use this library as a subproject, simply add `muzic`
 ## Notes
 ### Zlib stream header
 Zlib pads raw deflate stream with a 2-byte header conforming [RFC-1950](https://www.rfc-editor.org/rfc/rfc1950) by default. To emulate this behavior, the macro `InfZlibStrm` must be enabled in `mz_config.h` (it's enabled by default). Only when `inflateInit2()` and `deflateInit2()` are called with `windowBits` set to negative values, Zlib will generate and accept raw deflate stream without the header, and `InfZlibStrm` can be disabled. Otherwise, Zlib will signal an error when decompressing the stream produced by muzic, and muzic won't be able to decompress stream produced by Zlib if `InfZlibStrm` is disabled.
+
+## Comparison with Zlib
+### Binary size
+Tested on Linux x86_64 with gcc 11.1.0, CMake option `CMAKE_BUILD_TYPE=Release`
+| Binary               | muzic           | Zlib              |
+|----------------------|-----------------|-------------------|
+| Static library       | 23664B (23.1KB) | 125522B (122.6KB) |
+| examples/defl2stdout | 21152B (20.7KB) | 56112B (54.8KB)   |
+| examples/infl4stdin  | 25456B (24.9KB) | 47184B (46.1KB)   |
+
+
+### Memory usage
+Tested on Linux x86_64 with gcc 11.1.0, CMake option `CMAKE_BUILD_TYPE=Release`
+
+Profiler: valgrind-3.18.1 with option `--tool=massif --stacks=yes`
+
+| Binary               | muzic (stack/heap/total) | Zlib (stack/heap/total)   |
+|----------------------|--------------------------|---------------------------|
+| examples/defl2stdout | 3.6KB / 33.1KB / 36.7KB  | 3.6KB / 262.9KB / 266.5KB |
+| examples/infl4stdin  | 3.3KB / 22.0KB / 25.3KB  | 3.3KB / 40.0KB / 43.3KB   |
 
 ## TODO:
 * Support `Z_BLOCK` mode for `inflate()`
