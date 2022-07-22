@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 3.19)
 project(muzic VERSION 1.0.0)
 
-option(BUILD_TESTS "Build test" OFF)
+option(BUILD_TESTS "Build test" ON)
 option(BUILD_EXAMPLES "Build examples" ON)
 
 ### Require out-of-source builds

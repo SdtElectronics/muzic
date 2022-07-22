@@ -11,7 +11,11 @@
 
 /* Zlib pads raw deflate stream with a 2-byte header by default */
 /* Enable this macro to emulate this behavior */
-#define InfZlibStrm
+#define MZ_ZLIB_HEADER
+
+/* Zlib ends raw deflate stream with a 4-byte checksum by default */
+/* Enable this macro to emulate this behavior */
+#define MZ_ZLIB_CHECKSUM
 
 #ifndef UZLIB_CONF_DEBUG_LOG
 /* Debug logging level 0, 1, 2, etc. */

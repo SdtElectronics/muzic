@@ -59,7 +59,6 @@ static size_t min(size_t a, size_t b) { return a<b ? a : b; }
 
 /* Macros used for control flow inside the 'inflateProcessChunk(..) function */
 #define inf__FILL_INPUT_BUFFER()            st->action = InfAction_FillInputBuffer;         \
-                                            strm->avail_in = 0;                             \
                                             res = Z_OK; break;
 #define inf__USE_OUTPUT_BUFFER_CONTENT()    st->action = InfAction_UseOutputBufferContent;  \
                                             res = Z_BUF_ERROR;                              \
@@ -80,7 +79,7 @@ typedef enum InfStep {
     InfStep_Read_Distance,
     InfStep_Read_DistanceBits,
     
-    InfStep_OUTPUT_SEQUENCE, InfStep_FATAL_ERROR, InfStep_END
+    InfStep_OUTPUT_SEQUENCE, InfStep_FATAL_ERROR, InfStep_ADLER32_CHECKSUM, InfStep_END
 } InfStep;
 
 static const unsigned char Inf_Reverse[256] = {
@@ -554,7 +553,7 @@ int inflate(z_stream* strm, int flush)
             st->bitstream.inputPtr = (const Byte*)inputBuffer;
             st->bitstream.inputEnd = st->bitstream.inputPtr + inputBufferSize;
             
-            #ifdef InfZlibStrm
+            #ifdef MZ_ZLIB_HEADER
             /* strip zlib stream header */
             if(*inputBuffer != 0x78){
                 st->action=InfAction_Init;
@@ -579,6 +578,7 @@ int inflate(z_stream* strm, int flush)
             st->bitstream.inputPtr = (const Byte*)inputBuffer;
             #endif
             break;
+        #ifdef MZ_ZLIB_HEADER
         case InfAction_Feed2ndZlibHeaderByte:
             if(inputBufferSize == 1){
                 st->action = InfAction_FillInputBuffer;
@@ -591,6 +591,7 @@ int inflate(z_stream* strm, int flush)
             inputBufferSize = strm->avail_in -= 1;
             st->bitstream.inputPtr = (const Byte*)inputBuffer;
             break;
+        #endif
         case InfAction_FillInputBuffer:
             st->bitstream.inputPtr = (const Byte*)inputBuffer;
             st->bitstream.inputEnd = st->bitstream.inputPtr + inputBufferSize;
@@ -623,12 +624,15 @@ int inflate(z_stream* strm, int flush)
             case InfStep_PROCESS_NEXT_BLOCK:
                 if (st->isLastBlock) {
                     #ifdef MZ_DEBUG
-                    printf(" > END OF STREAM\n\n");
+                    fprintf(stderr, " > END OF STREAM\n\n");
                     #endif
-                    step=InfStep_END;
-                    res = Z_STREAM_END;
-                    st->action = InfAction_Init;
-                    break;
+                    #ifdef MZ_ZLIB_CHECKSUM
+                    /* reuse this field to store how many bytes of checksum are expected */
+                    st->isLastBlock = 4;
+                    inf__goto(InfStep_ADLER32_CHECKSUM);
+                    #else
+                    inf__goto(InfStep_END);
+                    #endif
                 }
                 inf__fallthrough(InfStep_READ_BLOCK_HEADER);
                 
@@ -722,7 +726,7 @@ int inflate(z_stream* strm, int flush)
                 }
                 else if (st->literal==Inf_EndOfBlock) {
                     #ifdef MZ_DEBUG
-                    printf(" > EndOfBlock\n");
+                    fprintf(stderr, " > EndOfBlock\n");
                     #endif
                     inf__goto(InfStep_PROCESS_NEXT_BLOCK);
                 }
@@ -788,9 +792,23 @@ int inflate(z_stream* strm, int flush)
                 st->action=InfAction_Finish; 
                 res = Z_DATA_ERROR;
                 break; 
-                
             case InfStep_FATAL_ERROR:
+                break;
+
+            #ifdef MZ_ZLIB_CHECKSUM
+            case InfStep_ADLER32_CHECKSUM:
+                unsigned char checksum_buf[4];
+                size_t byte_read = min(st->isLastBlock, (bitstream->inputEnd-bitstream->inputPtr));
+                memcpy(checksum_buf, bitstream->inputPtr, byte_read);
+                bitstream->inputPtr += byte_read;
+                st->isLastBlock -= byte_read;
+                if(st->isLastBlock == 0) { inf__goto(InfStep_END); }
+                inf__FILL_INPUT_BUFFER();
+            #endif
+
             case InfStep_END:
+                res = Z_STREAM_END;
+                st->action = InfAction_Init;
                 break;
         }
     }
@@ -803,7 +821,7 @@ int inflate(z_stream* strm, int flush)
     strm->total_out += (writePtr - prevWbeg);
     strm->next_out  =  writePtr;
     #ifdef MZ_DEBUG
-    printf(" # inf.action = %d\n", st->action);
+    fprintf(stderr, " # inf.action = %d\n", st->action);
     #endif
     return res;
 }

@@ -30,12 +30,20 @@ int main(int argc, char** argv){
     /* ======= This initialization is not necessary for muzic ====== */
     /* === It's preserved merely for the compatibility with zlib === */
     {
+        strm.avail_in = 0;
         strm.zalloc = Z_NULL;
         strm.zfree  = Z_NULL;
         strm.opaque = Z_NULL;
     }
 
-    int prev_state = deflateInit(&strm, Z_DEFAULT_COMPRESSION);
+    int defl_level = Z_DEFAULT_COMPRESSION;
+    int defl_mode  = Z_FINISH;
+    if(argc == 3){
+        defl_level = argv[1][0] - '0';
+        defl_mode  = argv[2][0] - '0';
+    }
+
+    int prev_state = deflateInit(&strm, defl_level);
 
     if(prev_state != Z_OK) {
         return prev_state;
@@ -45,7 +53,9 @@ int main(int argc, char** argv){
 
     do {
         /* All compressed data generated in the last iteration is consumed */
-        if(prev_state == Z_STREAM_END){
+        /* The Z_OK predicate is preserved for Zlib only. muzic deflate    */
+        /* returns either Z_STREAM_END or Z_BUF_ERROR                      */
+        if(prev_state == Z_OK || prev_state == Z_STREAM_END){
             in_bytes = read(STDIN_FILENO, in_buf, sizeof(in_buf));
             if(in_bytes == 0) break;
             if(in_bytes == -1) return -1;
@@ -56,13 +66,19 @@ int main(int argc, char** argv){
         strm.next_out  = out_buf;
         strm.avail_out = sizeof(out_buf);
 
-        prev_state = deflate(&strm, Z_FINISH);
+        prev_state = deflate(&strm, defl_mode);
         /* printf("total_out: %d\n ", strm.total_out); */
+
+        #ifdef MZ_EG_HEXOUT
         unsigned char* idx;
         for(idx = out_buf; idx != strm.next_out; ++idx){
             printf("%02X ", *idx);
         }
-        printf("\n");
+        #else
+        fwrite(out_buf, sizeof(char), strm.next_out - out_buf, stdout);
+        #endif
+        fflush(stdout);
+        // fprintf(stderr, "\n");
     } while(in_bytes > 0);
 
     deflateEnd(&strm);
