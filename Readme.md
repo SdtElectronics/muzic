@@ -11,7 +11,7 @@ Please also refer to the [Zlib Manual](https://www.zlib.net/manual.html) for the
 
 * `int deflate(z_stream* strm, int flush)`
 
-    `deflate` compresses as much data as possible, and stops when the input buffer becomes empty or the output buffer becomes full. Currently, parameter `flush` is not used, but preserved for compatibility with Zlib. The behavior of this function is always similar to the Zlib counterpart being fed with the option `Z_FINISH`.
+    `deflate` compresses as much data as possible, and stops when the input buffer becomes empty or the output buffer becomes full. For flush modes, currently, only `Z_FULL_FLUSH` and `Z_FINISH` are supported. When modes other than `Z_FINISH` is passed via `flush`, the behavior of this function is the same as when `Z_FULL_FLUSH` is passed.
 
 * `int deflateEnd(z_stream* strm)`
 
