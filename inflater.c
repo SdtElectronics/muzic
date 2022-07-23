@@ -816,9 +816,11 @@ int inflate(z_stream* strm, int flush)
     st->step        =  (unsigned)step;
     strm->next_in   =  (unsigned char *)(st->bitstream.inputPtr);
     unsigned int consumed = strm->next_in - inputBuffer;
+    unsigned int produced = writePtr - prevWbeg;
     strm->avail_in  -= consumed;
     strm->total_in  += consumed;
-    strm->total_out += (writePtr - prevWbeg);
+    strm->avail_out -= produced;
+    strm->total_out += produced;
     strm->next_out  =  writePtr;
     #ifdef MZ_DEBUG
     fprintf(stderr, " # inf.action = %d\n", st->action);

@@ -7,6 +7,10 @@
 #ifndef MZ_ZLIB_COMP_INCLUDED
 #define MZ_ZLIB_COMP_INCLUDED
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define Z_NO_FLUSH      0
 #define Z_PARTIAL_FLUSH 1
 #define Z_SYNC_FLUSH    2
@@ -67,5 +71,9 @@ int inflateEnd(z_stream* strm);
 int deflateInit(z_stream* strm, int level);
 int deflate(z_stream* strm, int flush);
 int deflateEnd(z_stream* strm);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // MZ_ZLIB_COMP_INCLUDED

@@ -151,12 +151,15 @@ int deflate(z_stream* strm, int flush){
     }
 
     uzlib_compress(ustate, strm->next_in, strm->avail_in);
-    zlib_finish_block(ustate);
 
     /* When flush mode is not Z_FINISH, put an empty block at the end of a chunk */
     if(flush != Z_FINISH){
+        outbits(ustate, 0, 7); /* close block */
+        outbits(ustate, 0, 3); /* header of stored block */
+        outbits(ustate, 0, 7); /* flush all bits */
         out4bytes(ustate, 0x00, 0x00, 0xFF, 0xFF);
     }else{
+        zlib_finish_block(ustate);
         #ifdef MZ_ZLIB_CHECKSUM
         out4bytes(
             ustate,   
