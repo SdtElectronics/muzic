@@ -105,7 +105,7 @@ int deflate(z_stream* strm, int flush){
             strm->next_out  += strm->avail_out;
             strm->total_out += strm->avail_out;
             strm->avail_out = 0;
-            return Z_BUF_ERROR;
+            return Z_OK;
         }
 
         memcpy(strm->next_out, ustate->outbuf, ustate->outlen);
@@ -118,8 +118,12 @@ int deflate(z_stream* strm, int flush){
 
         free((void*)ustate->outbuf);
         ustate->outbuf = NULL;
-        if(strm->avail_in == 0) return flush == Z_FINISH ? Z_STREAM_END : Z_OK;
+        if(strm->avail_in == 0) return Z_OK;
     }
+
+    #ifdef MZ_NO_EMPTY_BLOCK
+    if(strm->avail_in == 0 && flush != Z_FINISH) return Z_OK;
+    #endif
 
     ustate->outlen   = 0;
     ustate->outsize  = 0;
@@ -158,6 +162,10 @@ int deflate(z_stream* strm, int flush){
         outbits(ustate, 0, 3); /* header of stored block */
         outbits(ustate, 0, 7); /* flush all bits */
         out4bytes(ustate, 0x00, 0x00, 0xFF, 0xFF);
+
+        #ifdef MZ_ZLIB_CHECKSUM
+        strm->adler = adler_v;
+        #endif
     }else{
         zlib_finish_block(ustate);
         #ifdef MZ_ZLIB_CHECKSUM
@@ -180,13 +188,14 @@ int deflate(z_stream* strm, int flush){
 
     /* if output buffer doesn't have enough space               */
     if(strm->avail_out < ustate->outlen){
+        if(flush == Z_FINISH) return Z_BUF_ERROR;
         memcpy(strm->next_out, ustate->outbuf, strm->avail_out);
         ustate->outbuf += strm->avail_out;
         ustate->outlen -= strm->avail_out;
         strm->next_out += strm->avail_out;
         strm->total_out = strm->avail_out;
         strm->avail_out = 0;
-        return Z_BUF_ERROR;
+        return Z_OK;
     }
 
     memcpy(strm->next_out, ustate->outbuf, ustate->outlen);

@@ -14,7 +14,7 @@
 #endif
 
 #ifndef MZ_EG_INPUT_BUFFER_SIZE
-#define MZ_EG_INPUT_BUFFER_SIZE 256
+#define MZ_EG_INPUT_BUFFER_SIZE 1024
 #endif
 
 #ifndef MZ_EG_OUTPUT_BUFFER_SIZE
@@ -51,11 +51,13 @@ int main(int argc, char** argv){
         prev_state = Z_STREAM_END;
     }
 
+    strm.avail_out = sizeof(out_buf);
+    
     do {
         /* All compressed data generated in the last iteration is consumed */
         /* The Z_OK predicate is preserved for Zlib only. muzic deflate    */
         /* returns either Z_STREAM_END or Z_BUF_ERROR                      */
-        if(prev_state == Z_OK || prev_state == Z_STREAM_END){
+        if(strm.avail_out > 0){
             in_bytes = read(STDIN_FILENO, in_buf, sizeof(in_buf));
             if(in_bytes == 0) break;
             if(in_bytes == -1) return -1;

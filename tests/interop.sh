@@ -1,4 +1,4 @@
-# 
+#!/bin/bash
 
 assertIdentical(){
     if [[ $1 != $2 ]]; then
@@ -16,8 +16,8 @@ sample="Lorem ipsum dolor sit amet, consectetur adipiscing elit,\
  cupidatat non proident, sunt in culpa qui officia deserunt     \
  mollit anim id est laborum."
 
-deflBins=(muzicDefl muzicDeflFragIn muzicDeflFragOut zlibDefl zlibDeflFragIn)
-inflBins=(muzicInfl zlibInfl zlibInflFragIn)
+deflBins=(muzicDefl muzicDeflFragIn muzicDeflFragOut zlibDefl zlibDeflFragIn zlibDeflFragOut)
+inflBins=(muzicInfl muzicInflFragIn muzicInflFragOut zlibInfl zlibInflFragIn)
 
 for defl in ${deflBins[@]}; do
     for infl in ${inflBins[@]}; do

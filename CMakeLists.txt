@@ -4,6 +4,7 @@
 cmake_minimum_required(VERSION 3.19)
 project(muzic VERSION 1.0.0)
 
+option(BUILD_SHARED "Build shared library" ON)
 option(BUILD_TESTS "Build test" ON)
 option(BUILD_EXAMPLES "Build examples" ON)
 
@@ -22,11 +23,26 @@ add_library(muzic
     zlib_comp.c
 )
 
+if (BUILD_SHARED)
+    add_library(muzic_s SHARED
+        defl_static.c
+        genlz77.c
+        inflater.c
+        zlib_comp.c
+    )
+
+    set_target_properties(muzic_s PROPERTIES OUTPUT_NAME muzic)
+endif()
+
 if (DEBUG_MSG)
     target_compile_definitions(muzic PRIVATE
         MZ_DEBUG
+    )
+
+    target_compile_definitions(muzic_s PRIVATE
+        MZ_DEBUG
     )   
-endif() 
+endif()
 
 target_include_directories(muzic 
   PUBLIC 

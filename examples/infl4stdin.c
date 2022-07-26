@@ -94,9 +94,11 @@ int main(int argc, char** argv){
     unsigned char* in_bin;
     #endif
 
+    strm.avail_out = sizeof(out_buf);
+
     do {
         /* inflate expects more input, read more */
-        if(prev_state == Z_OK || (prev_state == Z_STREAM_END && strm.avail_in == 0)){ 
+        if(strm.avail_out > 0){ 
             in_bytes = read(STDIN_FILENO, in_buf, sizeof(in_buf) - 1);
             // printf("%d\n ", in_bytes);
             if(in_bytes == 0) break;
@@ -137,8 +139,8 @@ int main(int argc, char** argv){
             break;
         }
 
-        printf("%.*s", strm.next_out - out_buf, out_buf);
-        // fwrite(out_buf, sizeof(char), strm.next_out - out_buf, stdout);
+        /* printf("%.*s", strm.next_out - out_buf, out_buf); */
+        fwrite(out_buf, sizeof(char), strm.next_out - out_buf, stdout);
         fflush(stdout);
         
     } while(in_bytes > 0);

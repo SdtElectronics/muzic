@@ -7,7 +7,8 @@
 #ifndef MZ_CONF_INCLUDED
 #define MZ_CONF_INCLUDED
 
-/* #define MZ_DEBUG */
+/* Don't insert empty block in the middle of a stream given empty inputs */
+#define MZ_NO_EMPTY_BLOCK
 
 /* Zlib pads raw deflate stream with a 2-byte header by default */
 /* Enable this macro to emulate this behavior */
