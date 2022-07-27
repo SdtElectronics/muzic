@@ -3,6 +3,9 @@
 
 ########################### Integration test executables ############################
 
+add_executable(test_main ${PROJECT_SOURCE_DIR}/tests/integration.c)
+
+target_link_libraries(test_main PRIVATE muzic)
 
 ####################### Interop test executables using muzic  #######################
 
