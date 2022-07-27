@@ -641,6 +641,7 @@ int inflate(z_stream* strm, int flush)
                 strm->total_in = 2;
                 return Z_OK;
             }
+            strm->total_in = 2;
             inputBuffer += 2;
             inputBufferSize = strm->avail_in -= 2;
             st->bitstream.inputPtr = (const Byte*)inputBuffer;
@@ -655,6 +656,7 @@ int inflate(z_stream* strm, int flush)
                 strm->total_in = 2;
                 return Z_OK;
             }
+            strm->total_in = 2;
             inputBuffer += 1;
             inputBufferSize = strm->avail_in -= 1;
             st->bitstream.inputPtr = (const Byte*)inputBuffer;

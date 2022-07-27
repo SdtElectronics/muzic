@@ -181,9 +181,14 @@ int deflate(z_stream* strm, int flush){
         ustate->comp_disabled = 1;
     }
 
-    strm->total_in = strm->avail_in;
+    if(flush == Z_FINISH){
+        strm->total_in  = strm->avail_in;
+    }else{
+        strm->total_in += strm->avail_in;
+    }
     /* always deflate all available data                        */
     /* set avail_in to 0 and return Z_STREAM_END to signal that */
+    strm->next_in += strm->avail_in;
     strm->avail_in = 0;
 
     /* if output buffer doesn't have enough space               */
@@ -200,7 +205,11 @@ int deflate(z_stream* strm, int flush){
 
     memcpy(strm->next_out, ustate->outbuf, ustate->outlen);
     
-    strm->total_out  = ustate->outlen;
+    if(flush == Z_FINISH){
+        strm->total_out  = ustate->outlen;
+    }else{
+        strm->total_out += ustate->outlen;
+    }
     strm->avail_out -= ustate->outlen;
     strm->next_out  += ustate->outlen;
 
