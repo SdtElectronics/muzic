@@ -115,7 +115,7 @@ int deflate(z_stream* strm, int flush){
         strm->avail_out -= ustate->outlen;
         strm->next_out  += ustate->outlen;
         strm->total_out += ustate->outlen;
-
+        
         free((void*)ustate->outbuf);
         ustate->outbuf = NULL;
         if(strm->avail_in == 0) return Z_OK;
@@ -193,7 +193,10 @@ int deflate(z_stream* strm, int flush){
 
     /* if output buffer doesn't have enough space               */
     if(strm->avail_out < ustate->outlen){
-        if(flush == Z_FINISH) return Z_BUF_ERROR;
+        if(flush == Z_FINISH) {
+            free((void*)ustate->outbuf);
+            return Z_BUF_ERROR;
+        }
         memcpy(strm->next_out, ustate->outbuf, strm->avail_out);
         ustate->outbuf += strm->avail_out;
         ustate->outlen -= strm->avail_out;
@@ -219,6 +222,7 @@ int deflate(z_stream* strm, int flush){
 }
 
 int deflateEnd(z_stream* strm){
+    free(strm->state.defl_state->hash_table);
     free(strm->state.defl_state);
     return Z_OK;
 }

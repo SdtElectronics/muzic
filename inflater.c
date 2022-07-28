@@ -603,8 +603,7 @@ int inflate(z_stream* strm, int flush)
          BlockType_FixedHuffman   = 1,
          BlockType_DynamicHuffman = 2
     };
-    InfBool canReadAll; InfStep step; size_t numberOfBytes; unsigned temp;
-    unsigned char *sequencePtr, *writePtr;
+    InfBool canReadAll; InfStep step; size_t numberOfBytes; unsigned temp; unsigned char *writePtr;
 
     struct Inf_State* st = strm->state.infl_state;
     const unsigned char* inputBuffer = strm->next_in;
@@ -844,7 +843,7 @@ int inflate(z_stream* strm, int flush)
              * <... ghost > # [[ straight * overlapped  ...... ghost ]] #
              */
             case InfStep_OUTPUT_SEQUENCE:
-                unsigned int restBytes = writeEnd - writePtr;
+                ;unsigned int restBytes = writeEnd - writePtr;
 
                 if(restBytes >= st->sequence_len){
                     int succ = Inf_Outbuf_read(&(st->outputBuf), writePtr, st->sequence_dist, st->sequence_len);
@@ -868,7 +867,7 @@ int inflate(z_stream* strm, int flush)
 
             #ifdef MZ_ZLIB_CHECKSUM
             case InfStep_ADLER32_CHECKSUM:
-                unsigned char checksum_buf[4];
+                ;unsigned char checksum_buf[4];
                 size_t byte_read = min(st->isLastBlock, (bitstream->inputEnd-bitstream->inputPtr));
                 memcpy(checksum_buf, bitstream->inputPtr, byte_read);
                 bitstream->inputPtr += byte_read;
