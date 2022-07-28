@@ -18,6 +18,17 @@
 /* Enable this macro to emulate this behavior */
 #define MZ_ZLIB_CHECKSUM
 
+/* Use dynamically growing buffer for inflate to remember output */
+#define MZ_INFL_SCALABLE_WIN
+
+/* The initial size of the dynamical buffer        */
+/* Shrink to save space in the cost of performance */
+/* Must be SMALLER THAN MZ_INFL_WIN_MAX_SIZE       */
+#define MZ_INFL_WIN_INIT_SIZE 512
+
+/* DO NOT TOUCH UNLESS YOU UNDERSTAND WHAT YOU ARE DOING */
+#define MZ_INFL_WIN_MAX_SIZE 32768
+
 #ifndef UZLIB_CONF_DEBUG_LOG
 /* Debug logging level 0, 1, 2, etc. */
 #define UZLIB_CONF_DEBUG_LOG 0

@@ -451,10 +451,6 @@ static const Inf_Huff* Inf_Huff_MakeFixedDistanceDecoder(Inf_SLList* tmplist) {
 }
 
 /*====================================================================================================================*/
-/* TODO: implement scalable seqence_buf                                 */
-/* TODO: use scaling buffer size to implement stronger check on distance*/
-
-enum {Inf_Outbuf_size = 1024 * 32};
 
 typedef struct Inf_Outbuf {
     unsigned char* seqence_buf;
@@ -462,31 +458,90 @@ typedef struct Inf_Outbuf {
     unsigned char* seqence_end;
 } Inf_Outbuf;
 
+#ifndef MZ_INFL_SCALABLE_WIN
+#ifdef MZ_INFL_WIN_INIT_SIZE
+#undef MZ_INFL_WIN_INIT_SIZE
+#endif
+#define MZ_INFL_WIN_INIT_SIZE MZ_INFL_WIN_MAX_SIZE
+#endif
+
 static int Inf_Outbuf_init(Inf_Outbuf* infbuf){
-    infbuf->seqence_buf = (unsigned char*)malloc(Inf_Outbuf_size*sizeof(unsigned char));
+    infbuf->seqence_buf = (unsigned char*)malloc(MZ_INFL_WIN_INIT_SIZE*sizeof(unsigned char));
     infbuf->seqence_ptr = infbuf->seqence_buf;
-    infbuf->seqence_end = infbuf->seqence_buf + Inf_Outbuf_size;
+    infbuf->seqence_end = infbuf->seqence_buf + MZ_INFL_WIN_INIT_SIZE;
     return infbuf->seqence_buf != NULL;
 }
 
-static void Inf_Outbuf_putc(Inf_Outbuf* infbuf, const char c){
-    assert(infbuf->seqence_ptr <= infbuf->seqence_end);
-    if(infbuf->seqence_ptr == infbuf->seqence_end) { infbuf->seqence_ptr = infbuf->seqence_buf; }
-    *(infbuf->seqence_ptr++) = c;
+#ifdef MZ_INFL_SCALABLE_WIN
+static int Inf_Outbuf_scale(Inf_Outbuf* infbuf, unsigned int size){
+    unsigned char* new_seq_buf = (unsigned char*)realloc(infbuf->seqence_buf, size);
+    if(new_seq_buf != NULL){
+        infbuf->seqence_ptr = infbuf->seqence_ptr - infbuf->seqence_buf + new_seq_buf;
+        infbuf->seqence_end = size + new_seq_buf;
+        infbuf->seqence_buf = new_seq_buf;
+        return Z_OK;
+    }else{
+        return Z_MEM_ERROR;
+    }
 }
 
-static void Inf_Outbuf_write(Inf_Outbuf* infbuf, const char* buf, unsigned int len){
-    unsigned int restBytes = infbuf->seqence_end - infbuf->seqence_ptr;
-    while (len > restBytes){
-        memcpy( infbuf->seqence_ptr, buf, restBytes );
-        buf += restBytes;
-        len -= restBytes;
-        infbuf->seqence_ptr = infbuf->seqence_buf;
-        restBytes = Inf_Outbuf_size;
-    }
+static int pow2ceil (int x){
+    --x;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    return x+1;
+}
+#endif
 
+static int Inf_Outbuf_putc(Inf_Outbuf* infbuf, const char c){
+    assert(infbuf->seqence_ptr <= infbuf->seqence_end);
+    int ret = Z_OK;
+    if(infbuf->seqence_ptr == infbuf->seqence_end) {
+        #ifdef MZ_INFL_SCALABLE_WIN
+        unsigned int buf_size = infbuf->seqence_end - infbuf->seqence_buf;
+        if(buf_size == MZ_INFL_WIN_MAX_SIZE){ /* If buffer size reached upper limit, rewind it */
+        #endif
+            infbuf->seqence_ptr = infbuf->seqence_buf; 
+        #ifdef MZ_INFL_SCALABLE_WIN
+        }else{                                /* otherwise double buffer size */
+            ret = Inf_Outbuf_scale(infbuf, buf_size*2);
+        }
+        #endif
+    }
+    *(infbuf->seqence_ptr++) = c;
+    return ret;
+}
+
+static int Inf_Outbuf_write(Inf_Outbuf* infbuf, const char* buf, unsigned int len){
+    int ret = Z_OK;
+    unsigned int restBytes = infbuf->seqence_end - infbuf->seqence_ptr;
+    if (len > restBytes) {                      /* Write length exceeded the space rest in buffer */
+        #ifdef MZ_INFL_SCALABLE_WIN
+        unsigned int buf_size = infbuf->seqence_end - infbuf->seqence_buf;
+        if(buf_size < MZ_INFL_WIN_MAX_SIZE){    /* Buffer has not grown to max size yet           */
+            unsigned int new_size = buf_size - restBytes + len;
+            new_size = new_size < MZ_INFL_WIN_MAX_SIZE ? pow2ceil(new_size) : MZ_INFL_WIN_MAX_SIZE;
+            ret = Inf_Outbuf_scale(infbuf, new_size);
+        } else {                                /* Buffer has reached max size                    */
+        #endif
+            do {
+                memcpy( infbuf->seqence_ptr, buf, restBytes );
+                buf += restBytes;
+                len -= restBytes;
+                infbuf->seqence_ptr = infbuf->seqence_buf;
+                restBytes = MZ_INFL_WIN_MAX_SIZE;
+            } while (len > restBytes);
+        #ifdef MZ_INFL_SCALABLE_WIN
+        }
+        #endif
+    }
+    
     memcpy( infbuf->seqence_ptr, buf, len );
     infbuf->seqence_ptr += len;
+    return ret;
 }
 
 static int Inf_Outbuf_read(
@@ -494,31 +549,47 @@ static int Inf_Outbuf_read(
     char*        dest, 
     unsigned int distance, 
     unsigned int len
-){
+){  
     unsigned char* sequencePtr = infbuf->seqence_ptr - distance;
     if (sequencePtr < infbuf->seqence_buf) {
-        sequencePtr += Inf_Outbuf_size;
+        #ifdef MZ_INFL_SCALABLE_WIN
+        if(infbuf->seqence_end - infbuf->seqence_buf != MZ_INFL_WIN_MAX_SIZE) return Z_DATA_ERROR;
+        #endif
+        sequencePtr += MZ_INFL_WIN_MAX_SIZE;
         unsigned int restBytes = infbuf->seqence_end - sequencePtr;
         if(restBytes >= len){
             memcpy( dest, sequencePtr, len );
             Inf_Outbuf_write(infbuf, sequencePtr, len);
-            return 1;
+            return Z_OK;
         }else{
             memcpy( dest, sequencePtr, restBytes );
             Inf_Outbuf_write(infbuf, sequencePtr, restBytes);
             sequencePtr = infbuf->seqence_buf;
             len  -= restBytes;
             dest += restBytes;
-            if (sequencePtr + len > infbuf->seqence_ptr) return 0;
+            if (sequencePtr + len > infbuf->seqence_ptr) return Z_DATA_ERROR;
         }
     }
+
+    #ifdef MZ_INFL_SCALABLE_WIN
+    unsigned int restBytes = infbuf->seqence_end - infbuf->seqence_ptr;
+    if (restBytes < len){
+        unsigned int buf_size = infbuf->seqence_end - infbuf->seqence_buf;
+        if(buf_size != MZ_INFL_WIN_MAX_SIZE){
+            unsigned int new_size = buf_size - restBytes + len;
+            new_size = new_size < MZ_INFL_WIN_MAX_SIZE ? pow2ceil(new_size) : MZ_INFL_WIN_MAX_SIZE;
+            if(Inf_Outbuf_scale(infbuf, new_size) != Z_OK) return Z_MEM_ERROR;
+            sequencePtr = infbuf->seqence_ptr - distance;
+        }
+    }
+    #endif
 
     while (len-- > 0) { 
         Inf_Outbuf_putc(infbuf, *sequencePtr); 
         *(dest++) = *(sequencePtr++);
     }
 
-    return 1;
+    return Z_OK;
 }
 
 static void Inf_Outbuf_Destroy(Inf_Outbuf* infbuf){
@@ -743,7 +814,13 @@ int inflate(z_stream* strm, int flush)
             case InfStep_OUTPUT_UNCOMPRESSED_BLOCK:
                 numberOfBytes = min( st->sequence_len, (writeEnd-writePtr) );
                 canReadAll    = Inf_BS_ReadBytes(bitstream, writePtr, &numberOfBytes);
-                Inf_Outbuf_write(&(st->outputBuf), writePtr, numberOfBytes);
+                int err = Inf_Outbuf_write(&(st->outputBuf), writePtr, numberOfBytes);
+                if(err) {
+                    step = InfStep_FATAL_ERROR;
+                    st->action = InfAction_Finish; 
+                    res = Z_MEM_ERROR;
+                    break; 
+                }
                 st->sequence_len -= numberOfBytes;
                 writePtr         += numberOfBytes;
                 if      ( !canReadAll        ) { inf__FILL_INPUT_BUFFER();         }
@@ -793,7 +870,13 @@ int inflate(z_stream* strm, int flush)
                 if (st->literal <Inf_EndOfBlock) {
                     if (writePtr==writeEnd) { inf__USE_OUTPUT_BUFFER_CONTENT(); }
                     *writePtr++ = st->literal;
-                    Inf_Outbuf_putc(&(st->outputBuf), (unsigned char)st->literal);
+                    int err = Inf_Outbuf_putc(&(st->outputBuf), (unsigned char)st->literal);
+                    if(err) {
+                        step = InfStep_FATAL_ERROR;
+                        st->action = InfAction_Finish; 
+                        res = Z_MEM_ERROR;
+                        break; 
+                    }
                     inf__goto(InfStep_Read_LiteralOrLength);
                 }
                 else if (st->literal==Inf_EndOfBlock) {
@@ -846,20 +929,20 @@ int inflate(z_stream* strm, int flush)
                 ;unsigned int restBytes = writeEnd - writePtr;
 
                 if(restBytes >= st->sequence_len){
-                    int succ = Inf_Outbuf_read(&(st->outputBuf), writePtr, st->sequence_dist, st->sequence_len);
+                    err = Inf_Outbuf_read(&(st->outputBuf), writePtr, st->sequence_dist, st->sequence_len);
                     writePtr += st->sequence_len;
                     st->sequence_len = 0;
-                    if (succ) { inf__goto(InfStep_Read_LiteralOrLength); }
+                    if (!err) { inf__goto(InfStep_Read_LiteralOrLength); }
                 } else {
-                    int succ = Inf_Outbuf_read(&(st->outputBuf), writePtr, st->sequence_dist, restBytes);
+                    err = Inf_Outbuf_read(&(st->outputBuf), writePtr, st->sequence_dist, restBytes);
                     writePtr = writeEnd;
                     st->sequence_len  -= restBytes;
-                    if (succ) { inf__USE_OUTPUT_BUFFER_CONTENT(); }
+                    if (!err) { inf__USE_OUTPUT_BUFFER_CONTENT(); }
                 }
 
                 step = InfStep_FATAL_ERROR;
                 st->action = InfAction_Finish; 
-                res = Z_DATA_ERROR;
+                res = err;
                 break;
 
             case InfStep_FATAL_ERROR:
