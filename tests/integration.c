@@ -346,12 +346,13 @@ int test_inflate_frag_out(){
     test_case_end;
 }
 
+enum {rewind_test_len = 65536};
 /* Output large enough to make the internal buffer of inflate rewind */
 int test_inflate_buf_rewind(){
     test_case(inflate_buf_rewind);
 
-    unsigned int len = 65536;
-    char largeInput[len];
+    unsigned int len = rewind_test_len;
+    char largeInput[rewind_test_len];
 
     while(len-- > 0){
         largeInput[len] = '1' + (len & 0b111111);

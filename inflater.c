@@ -487,11 +487,8 @@ static int Inf_Outbuf_scale(Inf_Outbuf* infbuf, unsigned int size){
 
 static int pow2ceil (int x){
     --x;
-    x |= x >> 1;
-    x |= x >> 2;
-    x |= x >> 4;
-    x |= x >> 8;
-    x |= x >> 16;
+    x |= x >> 1; x |= x >> 2; x |= x >> 4;
+    x |= x >> 8; x |= x >> 16;
     return x+1;
 }
 #endif
@@ -621,6 +618,10 @@ typedef struct Inf_State {
 
 } Inf_State;
 
+#define nthByteBigEndian(nth, u32) ( (u32 >> (8*(3 - nth))) & 0xFF )
+
+unsigned int muzic_adler32(const void *data, unsigned int length, unsigned int prev_sum);
+
 int inflateInit(z_stream* strm) {
     Inf_State* st = (Inf_State*)malloc(sizeof(Inf_State));
     if (st == Z_NULL) return Z_MEM_ERROR;
@@ -629,6 +630,7 @@ int inflateInit(z_stream* strm) {
 
     strm->total_in  = 0;
     strm->total_out = 0;
+    strm->adler     = 1;
 
     st->action = InfAction_Init;
     /*---- decompress ---------------------------- */
@@ -769,6 +771,7 @@ int inflate(z_stream* strm, int flush)
                     #ifdef MZ_ZLIB_CHECKSUM
                     /* reuse this field to store how many bytes of checksum are expected */
                     st->isLastBlock = 4;
+                    strm->adler = muzic_adler32(strm->next_out, writePtr - strm->next_out, strm->adler);
                     inf__goto(InfStep_ADLER32_CHECKSUM);
                     #else
                     st->action = InfAction_Finish;
@@ -950,13 +953,23 @@ int inflate(z_stream* strm, int flush)
 
             #ifdef MZ_ZLIB_CHECKSUM
             case InfStep_ADLER32_CHECKSUM:
-                ;unsigned char checksum_buf[4];
-                size_t byte_read = min(st->isLastBlock, (bitstream->inputEnd-bitstream->inputPtr));
-                memcpy(checksum_buf, bitstream->inputPtr, byte_read);
-                bitstream->inputPtr += byte_read;
-                st->isLastBlock -= byte_read;
-                if(st->isLastBlock == 0) { inf__goto(InfStep_END); }
-                inf__FILL_INPUT_BUFFER();
+                ;size_t byte_read = min(st->isLastBlock, (bitstream->inputEnd-bitstream->inputPtr));
+                int valid = 1;
+                while (byte_read-- > 0){
+                    unsigned char current = *(bitstream->inputPtr++);
+                    unsigned   nthTocheck = 3 - (st->isLastBlock - 1);
+                    valid &= (nthByteBigEndian(nthTocheck, strm->adler) == current);
+                    st->isLastBlock--;
+                }
+                if (valid){
+                    if(st->isLastBlock == 0) { inf__goto(InfStep_END); }
+                    inf__FILL_INPUT_BUFFER();
+                } else {
+                    step = InfStep_FATAL_ERROR;
+                    st->action = InfAction_Finish; 
+                    res = Z_DATA_ERROR;
+                    break; 
+                }
             #endif
 
             case InfStep_END:
@@ -971,6 +984,8 @@ int inflate(z_stream* strm, int flush)
     unsigned int consumed = strm->next_in - inputBuffer;
     unsigned int produced = writePtr - strm->next_out;
 
+    if(step != InfStep_END && step != InfStep_ADLER32_CHECKSUM)
+    strm->adler     =  muzic_adler32(strm->next_out, produced, strm->adler);
     strm->avail_in  -= consumed;
     strm->total_in  += consumed;
     strm->total_out += produced;

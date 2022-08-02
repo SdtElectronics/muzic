@@ -115,7 +115,7 @@ int deflate(z_stream* strm, int flush){
         strm->avail_out -= ustate->outlen;
         strm->next_out  += ustate->outlen;
         strm->total_out += ustate->outlen;
-        
+
         free((void*)ustate->outbuf);
         ustate->outbuf = NULL;
         if(strm->avail_in == 0) return Z_OK;

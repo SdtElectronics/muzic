@@ -1,5 +1,5 @@
 # muzic
-This library encapsulates a DEFLATE and INFLATE engine to provide a set of compression APIs partially compatible with Zlib. Particularly, it supports Zlib-style streaming operation for both compression and decompression. The objectives of this library are simplicity and lightweight, rather than performance and comprehensiveness, so that it can be integrated on embedded platforms.
+This library encapsulates a DEFLATE and INFLATE engine to provide a set of compression APIs partially compatible with Zlib. Specifically, it supports Zlib-style streaming operation for both compression and decompression, and RFC-1950 wrapper for raw DEFLATE stream. The objectives of this library are simplicity and lightweight, rather than performance and comprehensiveness, so that it can be integrated on embedded platforms.
 
 ## Supported Zlib APIs
 Please also refer to the [Zlib Manual](https://www.zlib.net/manual.html) for the complete description of APIs. Note that behaviors of functions in this library are not strictly identical to their Zlib counterparts, and differences are stated below.
@@ -36,7 +36,7 @@ Please also refer to the [Zlib Manual](https://www.zlib.net/manual.html) for the
 Macros representing states and flush modes are preserved. They can be found in `zlib_comp.h`.
 
 ## Build and integration
-The structure of this library is simple and flat, and no dependency other than libc is required. To use DEFLATE APIs, include `zlib_comp.h` and add `defl_static.c`, `genlz77.c` and `zlib_comp.c` to sources. To use INFLATE APIs, include `zlib_comp.h` and add `inflater.c` to sources.
+The structure of this library is simple and flat, and no dependency other than libc is required. To use DEFLATE APIs, include `zlib_comp.h` and add `defl_static.c`, `genlz77.c` and `zlib_comp.c` to sources. To use INFLATE APIs, include `zlib_comp.h` and add `inflater.c`, `zlib_comp.c` to sources.
 
 CMake is also supported. To use this library as a subproject, simply add `muzic` to `target_link_libraries` of targets depend on this library.
 
